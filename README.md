@@ -13,3 +13,43 @@ A runner control system for street races, using ESP32 and MFRC522 (RFID). This p
 - 🚨 Alert if a runner remains stopped for more than X minutes.
 - Integration with InfluxDB + Grafana for real-time visualisation
 - Node-RED + Telegram for notifications.
+
+### Stack: Node-RED, MQTT, InfluxDB, Telegraf, and Grafana
+
+This repository contains the minimum required to run a stack with:
+
+* [NodeRed](https://nodered.org/) Flow oriented programming system (open-source)
+* [Mosquitto](https://mosquitto.org/) MQTT server (open-source)
+* [InfluxDB](https://www.influxdata.com/products/influxdb-overview/) Time series oriented database (open-source)
+* [Telegraf](https://www.influxdata.com/time-series-platform/telegraf/) InfluxDB software agent (open-source)
+* [Grafana](https://grafana.com/) Dashboard software (open-source)
+
+#### Run
+Run stack:
+
+docker-compose -d up
+
+If everything is OK, you should see:
+
+* [NodeRed IDE](http://localhost:1880)
+* [NodeRed UI](http://localhost:1880/ui)
+
+#### Stop
+
+docker-compose stop
+
+#### Remove:
+
+docker-compose down
+
+#### First steps:
+
+##### Add database:
+
+To create the "test" database in InfluxDB, use the following command:
+
+> echo "create database test" | docker exec -i stack-nodered-mqtt-influxdb_v2_influxdb_1 influx.
+
+To verify that it was created correctly, use this command:
+
+> echo "show databases" | docker exec -i stack-nodered-mqtt-influxdb_v2_influxdb_1 influx.

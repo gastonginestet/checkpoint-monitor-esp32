@@ -1,0 +1,547 @@
+[
+    {
+        "id": "946f5f931c194f97",
+        "type": "tab",
+        "label": "Flow 1",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "b7525fb5be4e1288",
+        "type": "mqtt-broker",
+        "name": "mqtt-broker config",
+        "broker": "broker.mqtt.cool",
+        "port": 1883,
+        "clientid": "NodeRedClient_Gaston",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": 4,
+        "keepalive": 60,
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "eb85da5fb399a3e6",
+        "type": "influxdb",
+        "hostname": "influxdb",
+        "port": 8086,
+        "protocol": "http",
+        "database": "iot_data_checkpoints",
+        "name": "",
+        "usetls": false,
+        "tls": "",
+        "influxdbVersion": "1.x",
+        "url": "http://localhost:8086",
+        "timeout": 10,
+        "rejectUnauthorized": true
+    },
+    {
+        "id": "9bc8d02bebfb26fd",
+        "type": "telegram bot",
+        "botname": "CheckpointBot",
+        "usernames": "",
+        "chatids": "",
+        "baseapiurl": "",
+        "testenvironment": false,
+        "updatemode": "polling",
+        "pollinterval": 300,
+        "usesocks": false,
+        "sockshost": "",
+        "socksprotocol": "socks5",
+        "socksport": 6667,
+        "socksusername": "anonymous",
+        "sockspassword": "",
+        "bothost": "",
+        "botpath": "",
+        "localbothost": "0.0.0.0",
+        "localbotport": 8443,
+        "publicbotport": 8443,
+        "privatekey": "",
+        "certificate": "",
+        "useselfsignedcertificate": false,
+        "sslterminated": false,
+        "verboselogging": false
+    },
+    {
+        "id": "959ccdc45b90e8e3",
+        "type": "mqtt in",
+        "z": "946f5f931c194f97",
+        "name": "",
+        "topic": "carrera/checkpoint",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "b7525fb5be4e1288",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 410,
+        "y": 140,
+        "wires": [
+            [
+                "753629a4d94deab4",
+                "218f5d0d2cdd5890"
+            ]
+        ]
+    },
+    {
+        "id": "fe3639829244edc2",
+        "type": "function",
+        "z": "946f5f931c194f97",
+        "name": "(SIMULACIÓN) alteración del checkpoint",
+        "func": "let count = global.get(\"count\") || 1;\n\nif (msg.payload === \"sumar\") {\n  count += 1;\n} else if (msg.payload === \"restar\") {\n  count = Math.max(1, count - 1); // Evita que sea menor a 1\n}\n\nglobal.set(\"count\", count);\n\nmsg.payload = \"Checkpoint actualizado a KM \" + count;\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 680,
+        "y": 720,
+        "wires": [
+            [
+                "146dcc111cf3fcbe"
+            ]
+        ]
+    },
+    {
+        "id": "753629a4d94deab4",
+        "type": "function",
+        "z": "946f5f931c194f97",
+        "name": "Asignar Checkpoint y detección",
+        "func": "let id = msg.payload.id;\nlet rssi = msg.payload.rssi;\nlet timestamp = msg.payload.timestamp;\n\n// Checkpoint global actual (ej: 1 → KM_1)\nlet count = global.get(\"count\") || 1;\nlet checkpoint = count;\n\n// Lista de checkpoints por los que ya pasó este corredor\nlet passed = flow.get(id) || [];\n\n// Si ya pasó por este checkpoint, no se registra de nuevo\nif (passed.includes(checkpoint)) {\n  return null;\n}\n\n// Marcar que pasó por este checkpoint\npassed.push(checkpoint);\nflow.set(id, passed);\n\n// Agregar el checkpoint al payload (es necesario para guardar en InfluxDB)\nmsg.payload.checkpoint = checkpoint;\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 690,
+        "y": 140,
+        "wires": [
+            [
+                "bcc9a9d0eb71403f"
+            ]
+        ]
+    },
+    {
+        "id": "b8c7cf206d03ce83",
+        "type": "inject",
+        "z": "946f5f931c194f97",
+        "name": "simulador corredor 3",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "{\"id\":\"c123\",\"rssi\":-63,\"dentroDeZona\":true,\"timestamp\":1750123456789}",
+        "payloadType": "json",
+        "x": 390,
+        "y": 220,
+        "wires": [
+            [
+                "753629a4d94deab4",
+                "218f5d0d2cdd5890"
+            ]
+        ]
+    },
+    {
+        "id": "1f354cdf7fb9bc68",
+        "type": "inject",
+        "z": "946f5f931c194f97",
+        "name": "simulador corredor 4",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "{\"id\":\"c124\",\"rssi\":-63,\"dentroDeZona\":true,\"timestamp\":1750123456789}",
+        "payloadType": "json",
+        "x": 430,
+        "y": 300,
+        "wires": [
+            [
+                "218f5d0d2cdd5890",
+                "753629a4d94deab4"
+            ]
+        ]
+    },
+    {
+        "id": "0de334e53d076524",
+        "type": "inject",
+        "z": "946f5f931c194f97",
+        "name": "sumar",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "sumar",
+        "payloadType": "str",
+        "x": 370,
+        "y": 680,
+        "wires": [
+            [
+                "fe3639829244edc2"
+            ]
+        ]
+    },
+    {
+        "id": "87ee30ece1d6edad",
+        "type": "inject",
+        "z": "946f5f931c194f97",
+        "name": "restar",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "restar",
+        "payloadType": "str",
+        "x": 370,
+        "y": 740,
+        "wires": [
+            [
+                "fe3639829244edc2"
+            ]
+        ]
+    },
+    {
+        "id": "218f5d0d2cdd5890",
+        "type": "function",
+        "z": "946f5f931c194f97",
+        "name": "control de detección",
+        "func": "let id = msg.payload.id;\nlet rssi = msg.payload.rssi;\nlet timestamp = msg.payload.timestamp;\n\n// node.warn(\"ID: \" + id);\n// node.warn(\"RSSI: \" + rssi);\n// node.warn(\"Timestamp: \" + timestamp);\n\n// Checkpoint global actual (ej: 1 → KM_1)\nlet count = global.get(\"count\") || 1;\nlet checkpoint = count;\n// node.warn(\"Checkpoint actual: \" + checkpoint);\n\n// Lista de checkpoints por los que ya pasó este corredor\nlet passed = flow.get(id) || [];\n// node.warn(\"Checkpoints previos del corredor: \" + JSON.stringify(passed));\n\n// Variables de salida\nlet isStopped = false;\nlet alarm = false;\n\n// Clave para contador\nlet checkpointKey = id + \"_count_\" + checkpoint;\n\n// Solo verificamos si ya pasó por este checkpoint\nif (passed.includes(checkpoint)) {\n    // node.warn(\"Ya pasó por este checkpoint. Contando repeticiones...\");\n\n    let detectionCount = flow.get(checkpointKey) || 0;\n\n    if (detectionCount < 10) {\n        detectionCount += 1;\n        flow.set(checkpointKey, detectionCount);\n        // node.warn(\"Detecciones repetidas en \" + checkpoint + \": \" + detectionCount);\n\n        if (detectionCount >= 5) {\n            isStopped = true;\n            // node.warn(\"🚨 El corredor está detenido.\");\n        }\n\n        if (detectionCount === 10) {\n            alarm = true;\n            // node.warn(\"🔔 Alarma: El corredor llegó a 10 detecciones en el mismo checkpoint.\");\n        }\n    } else {\n        // node.warn(\"🚫 Ya se alcanzó el límite de 10 detecciones. No se actualiza más.\");\n    }\n\n} else {\n    // Primer paso por este checkpoint, reiniciamos el contador\n    // node.warn(\"Primer paso por este checkpoint. Reiniciando contador...\");\n    flow.set(checkpointKey, 1);\n}\n\n// Guardamos los últimos datos del corredor\nflow.set(id + \"_last\", { timestamp, rssi });\n\nmsg.payload.isStopped = isStopped;\nmsg.payload.alarm = alarm;\n\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 680,
+        "y": 280,
+        "wires": [
+            [
+                "da6daf0c7a0d9a47"
+            ]
+        ]
+    },
+    {
+        "id": "da6daf0c7a0d9a47",
+        "type": "function",
+        "z": "946f5f931c194f97",
+        "name": "trigger telegram alert",
+        "func": "let id = msg.payload.id;\nlet checkpoint = (global.get(\"count\") || 1);\nlet alarmKey = id + \"_alarm_\" + checkpoint;\n\nif (msg.payload.alarm === true) {\n    let alreadyTriggered = flow.get(alarmKey) || false;\n\n    if (!alreadyTriggered) {\n        flow.set(alarmKey, true);\n\n        let message = `🚨 El corredor ${id} se encuentra detenido en el kilómetro ${checkpoint}`;\n\n        msg.payload = {\n            chatId: -4864809287,\n            type: 'message',\n            content: message\n        };\n\n        return msg;\n    } else {\n        return null;\n    }\n}\n\nreturn null;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 960,
+        "y": 280,
+        "wires": [
+            [
+                "46319b0d4207e866"
+            ]
+        ]
+    },
+    {
+        "id": "46319b0d4207e866",
+        "type": "telegram sender",
+        "z": "946f5f931c194f97",
+        "name": "",
+        "bot": "9bc8d02bebfb26fd",
+        "haserroroutput": false,
+        "outputs": 1,
+        "x": 1200,
+        "y": 280,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "e213b778ede8e19f",
+        "type": "debug",
+        "z": "946f5f931c194f97",
+        "name": "Mensaje recibido",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 630,
+        "y": 380,
+        "wires": []
+    },
+    {
+        "id": "2b8909b084cae8f5",
+        "type": "telegram receiver",
+        "z": "946f5f931c194f97",
+        "name": "",
+        "bot": "9bc8d02bebfb26fd",
+        "saveDataDir": "",
+        "filterCommands": false,
+        "x": 400,
+        "y": 400,
+        "wires": [
+            [
+                "e213b778ede8e19f",
+                "7bc41b2309fa35e0"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "146dcc111cf3fcbe",
+        "type": "debug",
+        "z": "946f5f931c194f97",
+        "name": "debug 1",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1060,
+        "y": 720,
+        "wires": []
+    },
+    {
+        "id": "7bc41b2309fa35e0",
+        "type": "function",
+        "z": "946f5f931c194f97",
+        "name": "analizar /estado",
+        "func": "let message = msg.payload.content || \"\";\nlet chatId = msg.payload.chatId;\n\nif (message.startsWith(\"/estado\")) {\n    let parts = message.split(\" \");\n    \n    if (parts.length === 2) {\n        let corredorId = parts[1].trim();\n\n        // Guardamos info para la consulta a la DB\n        msg.chatId = chatId;\n        msg.corredorId = corredorId;\n\n        return [msg, null];  // Primer output: continúa la lógica (consulta DB)\n    } else {\n        // Formato incorrecto del comando\n        msg.payload = {\n            chatId: chatId,\n            type: 'message',\n            content: \"❌ Formato incorrecto. Usá: /estado <id_corredor>\"\n        };\n        return [null, msg];  // Segundo output: respuesta de error\n    }\n} else {\n    // Comando desconocido\n    msg.payload = {\n        chatId: chatId,\n        type: 'message',\n        content: \"❌ Comando no reconocido. Usá /estado <id_corredor>\"\n    };\n    return [null, msg];  // Segundo output: respuesta de error\n}\n",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 620,
+        "y": 480,
+        "wires": [
+            [
+                "9df0992e898b2108"
+            ],
+            [
+                "ffb4bb2bc03eae38"
+            ]
+        ]
+    },
+    {
+        "id": "ffb4bb2bc03eae38",
+        "type": "telegram sender",
+        "z": "946f5f931c194f97",
+        "name": "",
+        "bot": "9bc8d02bebfb26fd",
+        "haserroroutput": false,
+        "outputs": 1,
+        "x": 1160,
+        "y": 600,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "fac07312fc9d7a0b",
+        "type": "influxdb out",
+        "z": "946f5f931c194f97",
+        "influxdb": "eb85da5fb399a3e6",
+        "name": "",
+        "measurement": "checkpoints",
+        "precision": "",
+        "retentionPolicy": "",
+        "database": "database",
+        "precisionV18FluxV20": "ms",
+        "retentionPolicyV18Flux": "",
+        "org": "organisation",
+        "bucket": "bucket",
+        "x": 1440,
+        "y": 140,
+        "wires": []
+    },
+    {
+        "id": "bcc9a9d0eb71403f",
+        "type": "function",
+        "z": "946f5f931c194f97",
+        "name": "envío a grafana",
+        "func": "const id = msg.payload.id;\nconst rssi = msg.payload.rssi;\nconst dentroDeZona = msg.payload.dentroDeZona;\nconst timestamp = msg.payload.timestamp || Date.now();\nconst checkpoint = msg.payload.checkpoint\n\n// Validación mínima\nif (typeof id !== \"string\" || typeof rssi !== \"number\" || typeof dentroDeZona !== \"boolean\") {\n  return null;\n}\n\nmsg.payload = {\n  id: id,\n  checkpoint: checkpoint,\n  rssi: rssi,\n  dentroDeZona: dentroDeZona,\n  timestamp: timestamp\n};\n\nmsg.measurement = \"checkpoints\";\n\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1020,
+        "y": 140,
+        "wires": [
+            [
+                "fac07312fc9d7a0b"
+            ]
+        ]
+    },
+    {
+        "id": "a00bbc5fd08a732d",
+        "type": "function",
+        "z": "946f5f931c194f97",
+        "name": "reset context",
+        "func": "for (let key of flow.keys()) {\n    flow.set(key, undefined);\n}\n\n// Borrar todas las variables del contexto global\nfor (let key of global.keys()) {\n    global.set(key, undefined);\n}\n\nmsg.query = \"DROP MEASUREMENT checkpoints\";\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 830,
+        "y": 60,
+        "wires": [
+            [
+                "298206d4ae2fc84b"
+            ]
+        ]
+    },
+    {
+        "id": "7cb7200ac1489a3c",
+        "type": "inject",
+        "z": "946f5f931c194f97",
+        "name": "reset",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "reset",
+        "payloadType": "str",
+        "x": 410,
+        "y": 60,
+        "wires": [
+            [
+                "a00bbc5fd08a732d"
+            ]
+        ]
+    },
+    {
+        "id": "298206d4ae2fc84b",
+        "type": "influxdb in",
+        "z": "946f5f931c194f97",
+        "influxdb": "eb85da5fb399a3e6",
+        "name": "Query Influx",
+        "query": "",
+        "rawOutput": false,
+        "precision": "",
+        "retentionPolicy": "",
+        "org": "",
+        "x": 1090,
+        "y": 60,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "9df0992e898b2108",
+        "type": "function",
+        "z": "946f5f931c194f97",
+        "name": "Query Builder",
+        "func": "let corredorId = msg.corredorId;\n\nmsg.query = `SELECT * FROM checkpoints WHERE id = '${corredorId}' ORDER BY time DESC LIMIT 1`;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 855,
+        "y": 451,
+        "wires": [
+            [
+                "a17bf7b9a3d9cc83"
+            ]
+        ]
+    },
+    {
+        "id": "1dcef62d22239829",
+        "type": "function",
+        "z": "946f5f931c194f97",
+        "name": "Procesar Respuesta",
+        "func": "let chatId = msg.chatId;\nlet result = msg.payload;\n\nif (result.length > 0) {\n    let data = result[0];\n\n    let dateUTC = new Date(data.time);\n    // toLocaleString con timezone \"America/Argentina/Buenos_Aires\"\n    let dateFormatted = dateUTC.toLocaleString('es-AR', {\n        timeZone: 'America/Argentina/Buenos_Aires',\n        year: 'numeric',\n        month: '2-digit',\n        day: '2-digit',\n        hour: '2-digit',\n        minute: '2-digit',\n        second: '2-digit'\n    });\n\n    msg.payload = {\n        chatId: chatId,\n        type: 'message',\n        content: `✅ Último estado de *${data.id}*\\nCheckpoint: ${data.checkpoint}\\nRSSI: ${data.rssi}\\nDentro de zona: ${data.dentroDeZona}\\nHora: ${dateFormatted}`\n    };\n} else {\n    msg.payload = {\n        chatId: chatId,\n        type: 'message',\n        content: `⚠️ No se encontró información para el corredor *${msg.corredorId}*.`\n    };\n}\n\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1320,
+        "y": 460,
+        "wires": [
+            [
+                "ffb4bb2bc03eae38"
+            ]
+        ]
+    },
+    {
+        "id": "a17bf7b9a3d9cc83",
+        "type": "influxdb in",
+        "z": "946f5f931c194f97",
+        "influxdb": "eb85da5fb399a3e6",
+        "name": "Consultar Influx",
+        "query": "",
+        "rawOutput": false,
+        "precision": "",
+        "retentionPolicy": "",
+        "org": "",
+        "x": 1080,
+        "y": 440,
+        "wires": [
+            [
+                "1dcef62d22239829"
+            ]
+        ]
+    }
+]

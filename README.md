@@ -46,10 +46,21 @@ docker-compose down
 
 ##### Add database:
 
-To create the "test" database in InfluxDB, use the following command:
+To create the "iot_data_checkpoints" database in InfluxDB, use the following command:
 
-> echo "create database test" | docker exec -i stack-nodered-mqtt-influxdb_v2_influxdb_1 influx.
+> echo "create database iot_data_checkpoints" | docker exec -i checkpoint-monitor-esp32-influxdb-1 influx
 
 To verify that it was created correctly, use this command:
 
-> echo "show databases" | docker exec -i stack-nodered-mqtt-influxdb_v2_influxdb_1 influx.
+> echo "show databases" | docker exec -i checkpoint-monitor-esp32-influxdb-1 influx
+> echo "SELECT * FROM checkpoints LIMIT 5" | docker exec -i checkpoint-monitor-esp32-influxdb-1 influx -database iot_data_checkpoints
+
+docker exec -it checkpoint-monitor-esp32-influxdb-1 influx
+
+
+USE iot_data_checkpoints
+
+SHOW MEASUREMENTS
+
+
+SELECT * FROM checkpoints LIMIT 5
